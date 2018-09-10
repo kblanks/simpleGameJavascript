@@ -1,0 +1,38 @@
+header {
+	color:black;
+	background-color:white;
+	border:0px;
+	font-family:Arial;
+	}
+header h1{
+	
+}
+header h1:hover{
+	font-size: 200%;
+}
+header nav{
+}
+header ul{
+	list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+	background-color: #42b3f4;
+}
+header li {
+	float: left;
+}
+header li a {
+	display: block;
+    color: white;
+    text-align: center;
+    padding: 16px;
+    text-decoration: none;
+}
+header li a:hover{
+	background-color: #2a6e96;
+}
+canvas {
+    border: 1px solid #d3d3d3;
+    background-color: #f1f1f1;
+}
