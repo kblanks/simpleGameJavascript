@@ -13,6 +13,7 @@ setInterval(updateGameArea,dt*1000)
 
 function startGame() {
 	initBalls();
+	setupKeyListeners();
 }
 
 function updateGameArea() {
@@ -22,6 +23,15 @@ function updateGameArea() {
 
 function clear() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function setupKeyListeners(){
+	 document.addEventListener('keypress', jump);
+}
+
+function jump(){
+	blueBall.stop()
+	blueBall.vy=-3;
 }
 
 function initBalls(){
@@ -34,6 +44,7 @@ function ballsLoop(){
 	for (var i = 0; i < balls.length; i++) {
 			balls[i].move();
 			balls[i].checkFloorCollision();
+			balls[i].checkWallCollision();
 			balls[i].draw();
 			balls[i].logStats();
 		}
@@ -46,7 +57,7 @@ function ball(radius, color, mass, x, y) {
 	this.e=-0.7;
     this.x = x;
     this.y = y; 
-	this.vx = 0;
+	this.vx = 50;
     this.vy = 0; 
 	this.ax = 0;
 	this.ay = 0;
@@ -54,6 +65,9 @@ function ball(radius, color, mass, x, y) {
 	this.move = function() {
 		this.ay = 0;
 		this.ay += this.m * g; 
+		
+		//simple x motion
+		this.x += this.vx*dt;
 		
 		/* Verlet integration for the y-direction */
 		this.dy = this.vy * dt + (0.5 * this.ay * dt * dt);
@@ -64,8 +78,28 @@ function ball(radius, color, mass, x, y) {
 	}
 	
 	this.stop = function() {
+		this.ax=0;
+		this.ay=0;
 		this.vx=0;
 		this.vy=0;
+	}
+	
+	this.checkWallCollision = function(){
+		//right edge
+		if ((this.x+this.radius) >= canvas.width){
+			this.vx *= -1;
+			this.x = canvas.width - this.radius;
+		}
+		//left edge
+		if ((this.x-this.radius) <= 0){
+			this.vx *= -1;
+			this.x = this.radius;
+		}
+		//top edge
+		if ((this.y-this.radius) <= 0){
+			this.vy *= -1;
+			this.y = this.radius;
+		}
 	}
 	
 	this.checkFloorCollision = function(){
