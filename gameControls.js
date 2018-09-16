@@ -8,28 +8,38 @@ const dt=.02; //time step
 const g=9.81; //gravity (m/s^2)
 	
 //MAIN CODE
-startGame()
-setInterval(updateGameArea,dt*1000)
+startGame() //setup stuff
+setInterval(updateGameArea,dt*1000) //set game loop interval
 
+//INITALIZATION
 function startGame() {
 	initPlayer();
 	initPlatforms();
 	setupKeyListeners();
 }
 
+//GAME LOOP
 function updateGameArea() {
-	clear();
+	movementLoop();
+	drawingLoop();
+}
+
+//MOVEMENT
+movementLoop = function(){
 	move();
 	checkFloorCollision();
 	checkWallCollision();
 	isOnGround();
-	player.draw();
-	player.logStats();
-	for (var i = 0; i < platforms.length; i++) {
-		platforms[i].draw();
-	}
 }
 
+//DRAWING
+drawingLoop = function(){
+	clear();
+	drawPlayer();
+	drawPlatforms();
+}
+
+//INITIALIZATION FUNCTIONS
 function initPlayer(){
 	player = new ball();
 }
@@ -38,10 +48,6 @@ function initPlatforms(){
 	for (var i = 0; i < 3; i++) {
 		platforms[i] = new platform();
 	}
-}
-
-function clear() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
 function setupKeyListeners(){
@@ -53,24 +59,7 @@ function setupKeyListeners(){
 	 });
 }
 
-function jump(){
-	ay=0;
-	vy = -3;
-}
-
-function goLeft(){
-	vx -= 50;
-}
-
-function goRight(){
-	vx += 50;
-}
-
-function brakes(){
-	if (vx > 0) {vx += -10;}
-	else if (vx < 0) {vx += 10;}
-}
-
+//OBJECTS
 function ball() {
     radius = 15;
 	color = "blue";
@@ -113,6 +102,26 @@ function platform(){
 	}
 }
 
+//PLAYER MOVEMENT FUNCTIONS
+function jump(){
+	ay=0;
+	vy = -3;
+}
+
+function goLeft(){
+	vx -= 50;
+}
+
+function goRight(){
+	vx += 50;
+}
+
+function brakes(){
+	if (vx > 0) {vx += -10;}
+	else if (vx < 0) {vx += 10;}
+}
+
+//MOVEMENT FUNCTIONS
 move = function() {
 	ay = 0;
 	ay += this.m * g; 
@@ -174,4 +183,20 @@ isOnGround = function(){
 	if (((y + radius) == canvas.height)){
 		onground=true;}
 	else {onground=false;}
+}
+
+//DRAWING FUNCTIONS
+function clear() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+drawPlayer = function(){
+	player.draw();
+	player.logStats(); //writing position and velocity to screen to help with sanity checks
+}
+
+drawPlatforms = function(){
+	for (var i = 0; i < platforms.length; i++) {
+		platforms[i].draw();
+	}
 }
