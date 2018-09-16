@@ -74,7 +74,8 @@ function ball(radius, color, mass, x, y) {
 	this.color = color;
 	this.m=mass; //mass to use for other calculations
 	this.e=-0.7; //restitution factor
-	this.u=0.5; //kinetic friction
+	this.u=3; //kinetic friction
+	this.afx = this.u * g; //pre-calculate friction acceleration
     this.x = x;
     this.y = y; 
 	this.vx = 0;
@@ -87,17 +88,16 @@ function ball(radius, color, mass, x, y) {
 		this.ay = 0;
 		this.ay += this.m * g; 
 		
+		//friction
 		if (this.onground==true){
-		//friction (still figuring this part out)
-			if (this.vx > 0) {this.ax = -this.u * g;}
-			else if (this.vx < 0) {this.ax = this.u * g;}
+			if (this.vx > 0) {this.ax = -this.afx}
+			else if (this.vx < 0) {this.ax = this.afx}
 		}
+		else {this.ax=0;} //only apply kinetic friction while on the ground
+		
 		//Simple integration for the x-direction 
 		this.vx += this.ax*dt;
 		this.x += this.vx*dt;
-		
-		//simple x motion
-		//this.x += this.vx*dt;
 		
 		// Verlet integration for the y-direction
 		this.dy = this.vy * dt + (0.5 * this.ay * dt * dt);
@@ -110,11 +110,13 @@ function ball(radius, color, mass, x, y) {
 	this.checkWallCollision = function(){
 		//right edge
 		if ((this.x+this.radius) >= canvas.width){
+			this.ax *= -1;
 			this.vx *= -1;
 			this.x = canvas.width - this.radius;
 		}
 		//left edge
 		if ((this.x-this.radius) <= 0){
+			this.ax *= -1;
 			this.vx *= -1;
 			this.x = this.radius;
 		}
@@ -140,7 +142,7 @@ function ball(radius, color, mass, x, y) {
 	}
 	
 	this.isOnGround = function(){
-		if (((this.y + this.radius) == canvas.height)&&(this.vy==0)){
+		if (((this.y + this.radius) == canvas.height)){
 			this.onground=true;}
 		else {this.onground=false;}
 	}
