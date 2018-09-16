@@ -1,8 +1,8 @@
 //SETUP VARIABLES
 var canvas = document.getElementById('gameCanvas');
 var ctx = canvas.getContext('2d');
-var balls = [];
-var redBall,blueBall;
+var player;
+var platforms = [] ;
 //CONSTANTS
 const dt=.02; //time step
 const g=9.81; //gravity (m/s^2)
@@ -12,13 +12,32 @@ startGame()
 setInterval(updateGameArea,dt*1000)
 
 function startGame() {
-	initBalls();
+	initPlayer();
+	initPlatforms();
 	setupKeyListeners();
 }
 
 function updateGameArea() {
 	clear();
-	ballsLoop();
+	move();
+	checkFloorCollision();
+	checkWallCollision();
+	isOnGround();
+	player.draw();
+	player.logStats();
+	for (var i = 0; i < platforms.length; i++) {
+		platforms[i].draw();
+	}
+}
+
+function initPlayer(){
+	player = new ball();
+}
+
+function initPlatforms(){
+	for (var i = 0; i < 3; i++) {
+		platforms[i] = new platform();
+	}
 }
 
 function clear() {
@@ -35,130 +54,124 @@ function setupKeyListeners(){
 }
 
 function jump(){
-	blueBall.ay=0;
-	blueBall.vy = -3;
+	ay=0;
+	vy = -3;
 }
 
 function goLeft(){
-	blueBall.vx -= 50;
+	vx -= 50;
 }
 
 function goRight(){
-	blueBall.vx += 50;
+	vx += 50;
 }
 
 function brakes(){
-	if (blueBall.vx > 0) {blueBall.vx += -10;}
-	else if (blueBall.vx < 0) {blueBall.vx += 10;}
+	if (vx > 0) {vx += -10;}
+	else if (vx < 0) {vx += 10;}
 }
 
-function initBalls(){
-	redBall = new ball(15, "red", 1, 50, 50);
-	blueBall = new ball(15, "blue", 0.01, 120, 50);
-	balls = [redBall,blueBall];
-}
-
-function ballsLoop(){
-	for (var i = 0; i < balls.length; i++) {
-			balls[i].move();
-			balls[i].checkFloorCollision();
-			balls[i].checkWallCollision();
-			balls[i].isOnGround();
-			balls[i].draw();
-			balls[i].logStats();
-		}
-}
-
-function ball(radius, color, mass, x, y) {
-    this.radius = radius;
-	this.color = color;
-	this.m=mass; //mass to use for other calculations
-	this.e=-0.7; //restitution factor
-	this.u=3; //kinetic friction
-	this.afx = this.u * g; //pre-calculate friction acceleration
-    this.x = x;
-    this.y = y; 
-	this.vx = 0;
-    this.vy = 0; 
-	this.ax = 0;
-	this.ay = 0;
-	this.onground=false;
-	
-	this.move = function() {
-		this.ay = 0;
-		this.ay += this.m * g; 
-		
-		//friction
-		if (this.onground==true){
-			if (this.vx > 0) {this.ax = -this.afx}
-			else if (this.vx < 0) {this.ax = this.afx}
-		}
-		else {this.ax=0;} //only apply kinetic friction while on the ground
-		
-		//Simple integration for the x-direction 
-		this.vx += this.ax*dt;
-		this.x += this.vx*dt;
-		
-		// Verlet integration for the y-direction
-		this.dy = this.vy * dt + (0.5 * this.ay * dt * dt);
-		this.y += this.dy*100 ;
-		this.new_ay = this.ay / this.m;
-		this.avg_ay = 0.5 * (this.new_ay + this.ay);
-		this.vy += this.avg_ay * dt;
-	}
-	
-	this.checkWallCollision = function(){
-		//right edge
-		if ((this.x+this.radius) >= canvas.width){
-			this.ax *= -1;
-			this.vx *= -1;
-			this.x = canvas.width - this.radius;
-		}
-		//left edge
-		if ((this.x-this.radius) <= 0){
-			this.ax *= -1;
-			this.vx *= -1;
-			this.x = this.radius;
-		}
-		//top edge
-		if ((this.y-this.radius) <= 0){
-			this.vy *= -1;
-			this.y = this.radius;
-		}
-	}
-	
-	this.checkFloorCollision = function(){
-		//collision with floor
-		if ((this.y + this.radius) >= canvas.height){
-			if (this.vy <= 0.75) {
-				this.vy=0;
-				this.y = canvas.height - this.radius;
-			}
-			else {
-				this.vy *= this.e;
-				this.y = canvas.height - this.radius;
-			}
-		}
-	}
-	
-	this.isOnGround = function(){
-		if (((this.y + this.radius) == canvas.height)){
-			this.onground=true;}
-		else {this.onground=false;}
-	}
+function ball() {
+    radius = 15;
+	color = "blue";
+	m = 1;; //mass to use for other calculations
+	e=-0.7; //restitution factor
+	u=3; //kinetic friction
+	afx = u * g; //pre-calculate friction acceleration
+    x = 20; //initial position
+    y = 20; //initial y position
+	vx = 0; //initial x velocity
+    vy = 0; //initial y velocity
+	ax = 0; //initial x acceleration
+	ay = 0; //initial y acceleration
+	onground=false; //not on the ground initially
 	
 	this.draw = function(){
 		ctx.beginPath();
-		ctx.arc(this.x,this.y,this.radius,0,2*Math.PI);
-		ctx.fillStyle = this.color;
+		ctx.arc(x,y,radius,0,2*Math.PI);
+		ctx.fillStyle = color;
 		ctx.fill();
     }
 	this.logStats = function(){
-		ctx.fillStyle=this.color;
-		ctx.fillText("x: " + (Math.round(this.x)),this.x,10);
-		ctx.fillText("y: " + (canvas.height - Math.round(this.y) - this.radius),this.x,20);
-		ctx.fillText("vx: " + (Math.round(this.vx)),this.x,30);
-		ctx.fillText("vy: " + (Math.round(this.vy)*-1),this.x,40);
+		ctx.fillStyle=color;
+		ctx.fillText("x: " + (Math.round(x)),x,10);
+		ctx.fillText("y: " + (canvas.height - Math.round(y) - radius),x,20);
+		ctx.fillText("vx: " + (Math.round(vx)),x,30);
+		ctx.fillText("vy: " + (Math.round(vy)*-1),x,40);
 	}
+}
+
+function platform(){
+	this.color = "red";
+	this.x = Math.floor(Math.random() * canvas.width); 
+	this.y = Math.floor(Math.random() * canvas.height);
+	this.width = Math.floor(Math.random() * 200) + 40; //random number between 40 and 200
 	
+	this.draw = function(){
+		ctx.fillStyle=this.color;
+		ctx.fillRect(this.x,this.y,this.width,10)
+	}
+}
+
+move = function() {
+	ay = 0;
+	ay += this.m * g; 
+	
+	//friction
+	if (onground==true){
+		if (vx > 0) {ax = -afx}
+		else if (vx < 0) {ax = afx}
+	}
+	else {ax=0;} //only apply kinetic friction while on the ground
+	
+	//Simple integration for the x-direction 
+	vx += ax*dt;
+	x += vx*dt;
+	
+	// Verlet integration for the y-direction
+	dy = vy * dt + (0.5 * ay * dt * dt);
+	y += dy*100 ;
+	new_ay = ay / m;
+	avg_ay = 0.5 * (new_ay + ay);
+	vy += avg_ay * dt;
+}
+	
+checkWallCollision = function(){
+	//right edge
+	if ((x+radius) >= canvas.width){
+		ax *= -1;
+		vx *= -1;
+		x = canvas.width - radius;
+	}
+	//left edge
+	if ((x-radius) <= 0){
+		ax *= -1;
+		vx *= -1;
+		x = radius;
+	}
+	//top edge
+	if ((y-radius) <= 0){
+		vy *= -1;
+		y = radius;
+	}
+}
+	
+checkFloorCollision = function(){
+	//collision with floor
+	if ((y + radius) >= canvas.height){
+		if (vy <= 0.75) {
+			vy=0;
+			y = canvas.height - radius;
+		}
+		else {
+			vy *= e;
+			y = canvas.height - radius;
+		}
+	}
+}
+
+isOnGround = function(){
+	if (((y + radius) == canvas.height)){
+		onground=true;}
+	else {onground=false;}
 }
